@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Workspace</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 2rem;
+      background-color: #1e1e1e;
+      color: #fff;
+    }
+
+    h1, input, textarea {
+      color: #fff;
+      background: transparent;
+      border: none;
+      outline: none;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: bold;
+    }
+
+    .tag-input {
+      color: #aaa;
+      margin-bottom: 1rem;
+    }
+
+    .block {
+      background: #2a2a2a;
+      margin: 0.5rem 0;
+      padding: 1rem;
+      border-radius: 6px;
+      cursor: grab;
+    }
+
+    .block:active {
+      cursor: grabbing;
+    }
+
+    button {
+      background-color: #5b42f3;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #6c52f5;
+    }
+
+    textarea {
+      width: 100%;
+      background-color: #2a2a2a;
+      border: 1px solid #444;
+      padding: 0.5rem;
+      resize: vertical;
+    }
+
+  </style>
+</head>
+<body>
+
+  <input type="text" id="title" placeholder="Untitled" style="font-size: 2rem; font-weight: bold; display:block; margin-bottom: 0.5rem;"/>
+  <input type="text" id="tags" class="tag-input" placeholder="#tags (comma separated)" style="width:100%; margin-bottom: 1rem;"/>
+
+  <div id="blocks" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+  <button onclick="addBlock()">➕ Add Block</button>
+
+  <script>
+    const titleInput = document.getElementById("title");
+    const tagsInput = document.getElementById("tags");
+    const blocksContainer = document.getElementById("blocks");
+
+    function save() {
+      const blocks = [...document.querySelectorAll(".block textarea")].map(b => b.value);
+      const data = {
+        title: titleInput.value,
+        tags: tagsInput.value,
+        blocks: blocks
+      };
+      localStorage.setItem("workspace", JSON.stringify(data));
+    }
+
+    function load() {
+      const data = JSON.parse(localStorage.getItem("workspace"));
+      if (!data) return;
+      titleInput.value = data.title;
+      tagsInput.value = data.tags;
+      data.blocks.forEach(content => addBlock(content));
+    }
+
+    function addBlock(content = "") {
+      const block = document.createElement("div");
+      block.className = "block";
+      block.draggable = true;
+      block.ondragstart = drag;
+      block.innerHTML = `<textarea oninput="save()" rows="3">${content}</textarea>`;
+      blocksContainer.appendChild(block);
+      save();
+    }
+
+    function allowDrop(ev) {
+      ev.preventDefault();
+    }
+
+    function drag(ev) {
+      ev.dataTransfer.setData("text/plain", ev.target.dataset.index);
+      ev.dataTransfer.setData("text", ev.target.outerHTML);
+      ev.target.classList.add("dragging");
+      window.draggedElement = ev.target;
+    }
+
+    function drop(ev) {
+      ev.preventDefault();
+      const dragged = window.draggedElement;
+      const target = document.elementFromPoint(ev.clientX, ev.clientY);
+      if (target && target.closest('.block') && dragged !== target.closest('.block')) {
+        blocksContainer.insertBefore(dragged, target.closest('.block').nextSibling);
+        save();
+      }
+    }
+
+    titleInput.addEventListener("input", save);
+    tagsInput.addEventListener("input", save);
+
+    load();
+  </script>
+
+</body>
+</html>
